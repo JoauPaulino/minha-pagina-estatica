@@ -1,0 +1,54 @@
+# Nome do nosso fluxo de trabalho (pipeline). Aparecerá na aba "Actions" do GitHub.
+name: Deploy Pagina Estatica
+
+# Define o gatilho (trigger) para iniciar o pipeline.
+# Neste caso, ele será acionado sempre que houver um "push" na branch "main".
+on:
+  push:
+    branches: [ "main" ]
+
+# Permissões necessárias para que o pipeline possa interagir com o GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Define os "trabalhos" (jobs) que o pipeline irá executar.
+jobs:
+  # O nome do nosso job é "deploy".
+  deploy:
+    # Define o ambiente onde o job será executado.
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Especifica que o job deve rodar na última versão do Ubuntu.
+    runs-on: ubuntu-latest
+
+    # Define a sequência de passos (steps) a serem executados no job.
+    steps:
+      # 1. Baixa o código do seu repositório para o ambiente de execução.
+      - name: Checkout do Repositorio
+        uses: actions/checkout@v4
+
+      # 2. (Passo 4 da tarefa) Verifica se o arquivo index.html existe.
+      # Se o arquivo não for encontrado, o comando 'test' falhará e o pipeline será interrompido.
+      - name: Verificar se o arquivo index.html existe
+        run: test -f public/index.html
+
+      # 3. Configura o ambiente do GitHub Pages.
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      # 4. Constrói um "artefato" (um pacote) com o conteúdo da pasta 'public'.
+      # É este pacote que será publicado.
+      - name: Fazer Upload do Artefato
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # O caminho para a pasta que contém os arquivos do site.
+          path: './public'
+
+      # 5. Publica o artefato no GitHub Pages.
+      - name: Deploy no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
